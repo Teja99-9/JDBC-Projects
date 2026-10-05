@@ -85,7 +85,7 @@ public class HospitalManagementSystem {
 
     static final String USER = "root";
 
-    static final String PASSWORD = "Supraja@123";
+    static final String PASSWORD = "root";
 
     static Scanner sc = new Scanner(System.in);
 
