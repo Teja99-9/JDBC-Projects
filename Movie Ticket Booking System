@@ -1,0 +1,644 @@
+====================================================
+             MOVIE TICKET BOOKING SYSTEM
+====================================================
+
+CREATE DATABASE movie_booking_db;
+
+USE movie_booking_db;
+
+
+-- ================= MOVIES =================
+
+CREATE TABLE movies (
+    movie_id INT PRIMARY KEY AUTO_INCREMENT,
+    movie_name VARCHAR(100) NOT NULL,
+    language VARCHAR(30),
+    genre VARCHAR(50),
+    duration INT
+);
+
+
+-- ================= THEATERS =================
+
+CREATE TABLE theaters (
+    theater_id INT PRIMARY KEY AUTO_INCREMENT,
+    theater_name VARCHAR(100) NOT NULL,
+    city VARCHAR(50),
+    total_seats INT NOT NULL
+);
+
+
+-- ================= SHOWS =================
+
+CREATE TABLE shows (
+    show_id INT PRIMARY KEY AUTO_INCREMENT,
+    movie_id INT,
+    theater_id INT,
+    show_date DATE,
+    show_time TIME,
+
+    FOREIGN KEY (movie_id)
+        REFERENCES movies(movie_id),
+
+    FOREIGN KEY (theater_id)
+        REFERENCES theaters(theater_id)
+);
+
+
+-- ================= BOOKINGS =================
+
+CREATE TABLE bookings (
+    booking_id INT PRIMARY KEY AUTO_INCREMENT,
+    show_id INT,
+    customer_name VARCHAR(100),
+    seat_number INT,
+    booking_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (show_id)
+        REFERENCES shows(show_id),
+
+    UNIQUE (show_id, seat_number)
+);
+
+package jdbc;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Scanner;
+
+public class MovieTicketBookingSystem {
+
+    static final String URL =
+            "jdbc:mysql://localhost:3306/movie_booking_db";
+
+    static final String USER = "root";
+
+    static final String PASSWORD = "root";
+
+    static Scanner sc = new Scanner(System.in);
+
+
+    public static void main(String[] args) {
+
+        while (true) {
+
+            System.out.println();
+            System.out.println("======================================");
+            System.out.println("     MOVIE TICKET BOOKING SYSTEM");
+            System.out.println("======================================");
+
+            System.out.println("1. Movie Listing");
+            System.out.println("2. Theater Management");
+            System.out.println("3. Seat Booking");
+            System.out.println("4. Ticket Generation");
+            System.out.println("5. Exit");
+
+            System.out.println("======================================");
+
+            System.out.print("Enter your choice: ");
+            int choice = sc.nextInt();
+
+            switch (choice) {
+
+                case 1:
+                    movieListing();
+                    break;
+
+                case 2:
+                    theaterManagement();
+                    break;
+
+                case 3:
+                    seatBooking();
+                    break;
+
+                case 4:
+                    ticketGeneration();
+                    break;
+
+                case 5:
+                    System.out.println(
+                            "Thank you for using Movie Ticket Booking System."
+                    );
+
+                    sc.close();
+                    System.exit(0);
+                    break;
+
+                default:
+                    System.out.println("Invalid choice.");
+            }
+        }
+    }
+
+
+    // ================= MOVIE LISTING =================
+
+    public static void movieListing() {
+
+        String sql =
+                "SELECT * FROM movies";
+
+
+        try (Connection con =
+                     DriverManager.getConnection(URL, USER, PASSWORD);
+
+             PreparedStatement ps =
+                     con.prepareStatement(sql);
+
+             ResultSet rs =
+                     ps.executeQuery()) {
+
+
+            boolean found = false;
+
+
+            System.out.println();
+            System.out.println(
+                    "======================================================"
+            );
+
+            System.out.println(
+                    "                    MOVIE LIST"
+            );
+
+            System.out.println(
+                    "======================================================"
+            );
+
+
+            while (rs.next()) {
+
+                found = true;
+
+
+                System.out.println(
+                        "Movie ID   : "
+                                + rs.getInt("movie_id")
+                );
+
+                System.out.println(
+                        "Movie Name : "
+                                + rs.getString("movie_name")
+                );
+
+                System.out.println(
+                        "Language   : "
+                                + rs.getString("language")
+                );
+
+                System.out.println(
+                        "Genre      : "
+                                + rs.getString("genre")
+                );
+
+                System.out.println(
+                        "Duration   : "
+                                + rs.getInt("duration")
+                                + " minutes"
+                );
+
+                System.out.println(
+                        "------------------------------------------------------"
+                );
+            }
+
+
+            if (!found) {
+
+                System.out.println(
+                        "No movies found."
+                );
+            }
+
+
+        } catch (SQLException e) {
+
+            System.out.println(
+                    "Error: " + e.getMessage()
+            );
+        }
+    }
+
+
+    // ================= THEATER MANAGEMENT =================
+
+    public static void theaterManagement() {
+
+        sc.nextLine();
+
+        System.out.print("Enter theater name: ");
+        String theaterName = sc.nextLine();
+
+        System.out.print("Enter city: ");
+        String city = sc.nextLine();
+
+        System.out.print("Enter total seats: ");
+        int totalSeats = sc.nextInt();
+
+
+        if (totalSeats <= 0) {
+
+            System.out.println(
+                    "Total seats must be greater than zero."
+            );
+
+            return;
+        }
+
+
+        String sql =
+                "INSERT INTO theaters" +
+                "(theater_name, city, total_seats) " +
+                "VALUES (?, ?, ?)";
+
+
+        try (Connection con =
+                     DriverManager.getConnection(URL, USER, PASSWORD);
+
+             PreparedStatement ps =
+                     con.prepareStatement(sql)) {
+
+
+            ps.setString(1, theaterName);
+            ps.setString(2, city);
+            ps.setInt(3, totalSeats);
+
+
+            int rows =
+                    ps.executeUpdate();
+
+
+            if (rows > 0) {
+
+                System.out.println(
+                        "Theater added successfully."
+                );
+            }
+
+
+        } catch (SQLException e) {
+
+            System.out.println(
+                    "Error: " + e.getMessage()
+            );
+        }
+    }
+
+
+    // ================= SEAT BOOKING =================
+
+    public static void seatBooking() {
+
+        System.out.print("Enter show ID: ");
+        int showId = sc.nextInt();
+
+        System.out.print("Enter seat number: ");
+        int seatNumber = sc.nextInt();
+
+
+        if (seatNumber <= 0) {
+
+            System.out.println(
+                    "Seat number must be greater than zero."
+            );
+
+            return;
+        }
+
+
+        sc.nextLine();
+
+        System.out.print("Enter customer name: ");
+        String customerName = sc.nextLine();
+
+
+        String showDetails =
+                "SELECT s.show_id, t.total_seats " +
+                "FROM shows s " +
+                "JOIN theaters t " +
+                "ON s.theater_id = t.theater_id " +
+                "WHERE s.show_id = ?";
+
+
+        String checkSeat =
+                "SELECT booking_id " +
+                "FROM bookings " +
+                "WHERE show_id = ? " +
+                "AND seat_number = ?";
+
+
+        String insertBooking =
+                "INSERT INTO bookings" +
+                "(show_id, customer_name, seat_number) " +
+                "VALUES (?, ?, ?)";
+
+
+        try (Connection con =
+                     DriverManager.getConnection(URL, USER, PASSWORD)) {
+
+
+            con.setAutoCommit(false);
+
+
+            try {
+
+                int totalSeats;
+
+
+                // ================= CHECK SHOW =================
+
+                try (PreparedStatement ps =
+                             con.prepareStatement(showDetails)) {
+
+                    ps.setInt(1, showId);
+
+                    ResultSet rs =
+                            ps.executeQuery();
+
+
+                    if (!rs.next()) {
+
+                        throw new SQLException(
+                                "Show not found."
+                        );
+                    }
+
+
+                    totalSeats =
+                            rs.getInt("total_seats");
+                }
+
+
+                // ================= VALIDATE SEAT =================
+
+                if (seatNumber > totalSeats) {
+
+                    throw new SQLException(
+                            "Invalid seat number. " +
+                            "Theater has only "
+                            + totalSeats
+                            + " seats."
+                    );
+                }
+
+
+                // ================= CHECK SEAT AVAILABILITY =================
+
+                try (PreparedStatement ps =
+                             con.prepareStatement(checkSeat)) {
+
+                    ps.setInt(1, showId);
+                    ps.setInt(2, seatNumber);
+
+
+                    ResultSet rs =
+                            ps.executeQuery();
+
+
+                    if (rs.next()) {
+
+                        throw new SQLException(
+                                "Seat "
+                                + seatNumber
+                                + " is already booked."
+                        );
+                    }
+                }
+
+
+                // ================= BOOK SEAT =================
+
+                try (PreparedStatement ps =
+                             con.prepareStatement(insertBooking)) {
+
+                    ps.setInt(1, showId);
+                    ps.setString(2, customerName);
+                    ps.setInt(3, seatNumber);
+
+
+                    int rows =
+                            ps.executeUpdate();
+
+
+                    if (rows == 0) {
+
+                        throw new SQLException(
+                                "Seat booking failed."
+                        );
+                    }
+                }
+
+
+                // ================= COMMIT =================
+
+                con.commit();
+
+
+                System.out.println();
+                System.out.println(
+                        "======================================"
+                );
+
+                System.out.println(
+                        "Seat booked successfully."
+                );
+
+                System.out.println(
+                        "Show ID     : " + showId
+                );
+
+                System.out.println(
+                        "Customer    : " + customerName
+                );
+
+                System.out.println(
+                        "Seat Number : " + seatNumber
+                );
+
+                System.out.println(
+                        "======================================"
+                );
+
+
+            } catch (Exception e) {
+
+                // ================= ROLLBACK =================
+
+                con.rollback();
+
+
+                System.out.println();
+                System.out.println(
+                        "Seat booking failed."
+                );
+
+                System.out.println(
+                        "Transaction rolled back."
+                );
+
+                System.out.println(
+                        "Reason: " + e.getMessage()
+                );
+            }
+
+
+        } catch (SQLException e) {
+
+            System.out.println(
+                    "Database error: " + e.getMessage()
+            );
+        }
+    }
+
+
+    // ================= TICKET GENERATION =================
+
+    public static void ticketGeneration() {
+
+        System.out.print("Enter booking ID: ");
+        int bookingId = sc.nextInt();
+
+
+        String sql =
+                "SELECT " +
+
+                "bk.booking_id, " +
+                "bk.customer_name, " +
+                "bk.seat_number, " +
+                "bk.booking_date, " +
+
+                "m.movie_name, " +
+                "m.language, " +
+
+                "t.theater_name, " +
+                "t.city, " +
+
+                "s.show_date, " +
+                "s.show_time " +
+
+                "FROM bookings bk " +
+
+                "JOIN shows s " +
+                "ON bk.show_id = s.show_id " +
+
+                "JOIN movies m " +
+                "ON s.movie_id = m.movie_id " +
+
+                "JOIN theaters t " +
+                "ON s.theater_id = t.theater_id " +
+
+                "WHERE bk.booking_id = ?";
+
+
+        try (Connection con =
+                     DriverManager.getConnection(URL, USER, PASSWORD);
+
+             PreparedStatement ps =
+                     con.prepareStatement(sql)) {
+
+
+            ps.setInt(1, bookingId);
+
+
+            ResultSet rs =
+                    ps.executeQuery();
+
+
+            if (rs.next()) {
+
+                System.out.println();
+                System.out.println(
+                        "======================================================"
+                );
+
+                System.out.println(
+                        "                  MOVIE TICKET"
+                );
+
+                System.out.println(
+                        "======================================================"
+                );
+
+                System.out.println(
+                        "Booking ID  : "
+                                + rs.getInt("booking_id")
+                );
+
+                System.out.println(
+                        "Customer    : "
+                                + rs.getString("customer_name")
+                );
+
+                System.out.println(
+                        "Movie       : "
+                                + rs.getString("movie_name")
+                );
+
+                System.out.println(
+                        "Language    : "
+                                + rs.getString("language")
+                );
+
+                System.out.println(
+                        "Theater     : "
+                                + rs.getString("theater_name")
+                );
+
+                System.out.println(
+                        "City        : "
+                                + rs.getString("city")
+                );
+
+                System.out.println(
+                        "Show Date   : "
+                                + rs.getDate("show_date")
+                );
+
+                System.out.println(
+                        "Show Time   : "
+                                + rs.getTime("show_time")
+                );
+
+                System.out.println(
+                        "Seat Number : "
+                                + rs.getInt("seat_number")
+                );
+
+                System.out.println(
+                        "Booked On   : "
+                                + rs.getTimestamp("booking_date")
+                );
+
+                System.out.println(
+                        "======================================================"
+                );
+
+                System.out.println(
+                        "              TICKET GENERATED"
+                );
+
+                System.out.println(
+                        "======================================================"
+                );
+
+
+            } else {
+
+                System.out.println(
+                        "Booking not found."
+                );
+            }
+
+
+        } catch (SQLException e) {
+
+            System.out.println(
+                    "Error: " + e.getMessage()
+            );
+        }
+    }
+}
