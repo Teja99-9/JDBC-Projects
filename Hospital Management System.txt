@@ -1,0 +1,1214 @@
+====================================================
+              HOSPITAL MANAGEMENT SYSTEM
+====================================================
+
+CREATE DATABASE hospital_db;
+
+USE hospital_db;
+
+
+-- ================= PATIENTS =================
+
+CREATE TABLE patients (
+    patient_id INT PRIMARY KEY AUTO_INCREMENT,
+    patient_name VARCHAR(50) NOT NULL,
+    age INT,
+    gender VARCHAR(10),
+    phone VARCHAR(15) UNIQUE,
+    city VARCHAR(30)
+);
+
+
+-- ================= DOCTORS =================
+
+CREATE TABLE doctors (
+    doctor_id INT PRIMARY KEY AUTO_INCREMENT,
+    doctor_name VARCHAR(50) NOT NULL,
+    specialization VARCHAR(50),
+    phone VARCHAR(15) UNIQUE,
+    experience INT
+);
+
+
+-- ================= APPOINTMENTS =================
+
+CREATE TABLE appointments (
+    appointment_id INT PRIMARY KEY AUTO_INCREMENT,
+
+    patient_id INT NOT NULL,
+    doctor_id INT NOT NULL,
+
+    appointment_date DATE NOT NULL,
+    appointment_time TIME NOT NULL,
+
+    status VARCHAR(20) DEFAULT 'BOOKED',
+
+    FOREIGN KEY (patient_id)
+        REFERENCES patients(patient_id),
+
+    FOREIGN KEY (doctor_id)
+        REFERENCES doctors(doctor_id),
+
+    UNIQUE (doctor_id, appointment_date, appointment_time)
+);
+
+
+-- ================= PRESCRIPTIONS =================
+
+CREATE TABLE prescriptions (
+    prescription_id INT PRIMARY KEY AUTO_INCREMENT,
+
+    appointment_id INT NOT NULL,
+
+    medicine_name VARCHAR(100) NOT NULL,
+    dosage VARCHAR(50),
+    duration VARCHAR(50),
+    instructions VARCHAR(150),
+
+    FOREIGN KEY (appointment_id)
+        REFERENCES appointments(appointment_id)
+);
+
+package jdbc;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Scanner;
+
+public class HospitalManagementSystem {
+
+    static final String URL =
+            "jdbc:mysql://localhost:3306/hospital_db";
+
+    static final String USER = "root";
+
+    static final String PASSWORD = "Supraja@123";
+
+    static Scanner sc = new Scanner(System.in);
+
+
+    public static void main(String[] args) {
+
+        while (true) {
+
+            System.out.println();
+            System.out.println("======================================");
+            System.out.println("     HOSPITAL MANAGEMENT SYSTEM");
+            System.out.println("======================================");
+
+            System.out.println("1. Register Patient");
+            System.out.println("2. Add Doctor");
+            System.out.println("3. Book Appointment");
+            System.out.println("4. Add Prescription");
+            System.out.println("5. View Appointments");
+            System.out.println("6. Patient Medical History");
+            System.out.println("7. View Patients");
+            System.out.println("8. View Doctors");
+            System.out.println("9. Update Patient");
+            System.out.println("10. Delete Patient");
+            System.out.println("11. Exit");
+
+            System.out.println("======================================");
+
+            System.out.print("Enter your choice: ");
+            int choice = sc.nextInt();
+
+            switch (choice) {
+
+                case 1:
+                    registerPatient();
+                    break;
+
+                case 2:
+                    addDoctor();
+                    break;
+
+                case 3:
+                    bookAppointment();
+                    break;
+
+                case 4:
+                    addPrescription();
+                    break;
+
+                case 5:
+                    viewAppointments();
+                    break;
+
+                case 6:
+                    patientMedicalHistory();
+                    break;
+
+                case 7:
+                    viewPatients();
+                    break;
+
+                case 8:
+                    viewDoctors();
+                    break;
+
+                case 9:
+                    updatePatient();
+                    break;
+
+                case 10:
+                    deletePatient();
+                    break;
+
+                case 11:
+                    System.out.println(
+                            "Thank you for using Hospital Management System."
+                    );
+
+                    sc.close();
+                    System.exit(0);
+
+                    break;
+
+                default:
+                    System.out.println("Invalid choice.");
+            }
+        }
+    }
+
+
+    // ================= REGISTER PATIENT =================
+
+    public static void registerPatient() {
+
+        sc.nextLine();
+
+        System.out.print("Enter patient name: ");
+        String name = sc.nextLine();
+
+        System.out.print("Enter age: ");
+        int age = sc.nextInt();
+
+        sc.nextLine();
+
+        System.out.print("Enter gender: ");
+        String gender = sc.nextLine();
+
+        System.out.print("Enter phone number: ");
+        String phone = sc.nextLine();
+
+        System.out.print("Enter city: ");
+        String city = sc.nextLine();
+
+
+        if (age <= 0) {
+            System.out.println("Age must be greater than zero.");
+            return;
+        }
+
+
+        String sql =
+                "INSERT INTO patients" +
+                "(patient_name, age, gender, phone, city) " +
+                "VALUES (?, ?, ?, ?, ?)";
+
+
+        try (Connection con =
+                     DriverManager.getConnection(URL, USER, PASSWORD);
+
+             PreparedStatement ps =
+                     con.prepareStatement(sql)) {
+
+
+            ps.setString(1, name);
+            ps.setInt(2, age);
+            ps.setString(3, gender);
+            ps.setString(4, phone);
+            ps.setString(5, city);
+
+
+            int rows = ps.executeUpdate();
+
+
+            if (rows > 0) {
+                System.out.println(
+                        "Patient registered successfully."
+                );
+            }
+
+
+        } catch (SQLException e) {
+
+            System.out.println(
+                    "Error: " + e.getMessage()
+            );
+        }
+    }
+
+
+    // ================= ADD DOCTOR =================
+
+    public static void addDoctor() {
+
+        sc.nextLine();
+
+        System.out.print("Enter doctor name: ");
+        String name = sc.nextLine();
+
+        System.out.print("Enter specialization: ");
+        String specialization = sc.nextLine();
+
+        System.out.print("Enter phone number: ");
+        String phone = sc.nextLine();
+
+        System.out.print("Enter experience in years: ");
+        int experience = sc.nextInt();
+
+
+        if (experience < 0) {
+            System.out.println(
+                    "Experience cannot be negative."
+            );
+
+            return;
+        }
+
+
+        String sql =
+                "INSERT INTO doctors" +
+                "(doctor_name, specialization, phone, experience) " +
+                "VALUES (?, ?, ?, ?)";
+
+
+        try (Connection con =
+                     DriverManager.getConnection(URL, USER, PASSWORD);
+
+             PreparedStatement ps =
+                     con.prepareStatement(sql)) {
+
+
+            ps.setString(1, name);
+            ps.setString(2, specialization);
+            ps.setString(3, phone);
+            ps.setInt(4, experience);
+
+
+            int rows = ps.executeUpdate();
+
+
+            if (rows > 0) {
+
+                System.out.println(
+                        "Doctor added successfully."
+                );
+            }
+
+
+        } catch (SQLException e) {
+
+            System.out.println(
+                    "Error: " + e.getMessage()
+            );
+        }
+    }
+
+
+    // ================= BOOK APPOINTMENT =================
+
+    public static void bookAppointment() {
+
+        System.out.print("Enter patient ID: ");
+        int patientId = sc.nextInt();
+
+        System.out.print("Enter doctor ID: ");
+        int doctorId = sc.nextInt();
+
+        System.out.print(
+                "Enter appointment date (YYYY-MM-DD): "
+        );
+
+        String date = sc.next();
+
+        System.out.print(
+                "Enter appointment time (HH:MM:SS): "
+        );
+
+        String time = sc.next();
+
+
+        String checkPatient =
+                "SELECT patient_id " +
+                "FROM patients " +
+                "WHERE patient_id = ?";
+
+
+        String checkDoctor =
+                "SELECT doctor_id " +
+                "FROM doctors " +
+                "WHERE doctor_id = ?";
+
+
+        String checkAppointment =
+                "SELECT appointment_id " +
+                "FROM appointments " +
+                "WHERE doctor_id = ? " +
+                "AND appointment_date = ? " +
+                "AND appointment_time = ?";
+
+
+        String insertAppointment =
+                "INSERT INTO appointments" +
+                "(patient_id, doctor_id, " +
+                "appointment_date, appointment_time) " +
+                "VALUES (?, ?, ?, ?)";
+
+
+        try (Connection con =
+                     DriverManager.getConnection(URL, USER, PASSWORD)) {
+
+
+            con.setAutoCommit(false);
+
+
+            try {
+
+                // ================= CHECK PATIENT =================
+
+                try (PreparedStatement ps =
+                             con.prepareStatement(checkPatient)) {
+
+                    ps.setInt(1, patientId);
+
+                    ResultSet rs = ps.executeQuery();
+
+
+                    if (!rs.next()) {
+
+                        throw new SQLException(
+                                "Patient not found."
+                        );
+                    }
+                }
+
+
+                // ================= CHECK DOCTOR =================
+
+                try (PreparedStatement ps =
+                             con.prepareStatement(checkDoctor)) {
+
+                    ps.setInt(1, doctorId);
+
+                    ResultSet rs = ps.executeQuery();
+
+
+                    if (!rs.next()) {
+
+                        throw new SQLException(
+                                "Doctor not found."
+                        );
+                    }
+                }
+
+
+                // ================= CHECK DOCTOR SLOT =================
+
+                try (PreparedStatement ps =
+                             con.prepareStatement(checkAppointment)) {
+
+                    ps.setInt(1, doctorId);
+                    ps.setString(2, date);
+                    ps.setString(3, time);
+
+                    ResultSet rs = ps.executeQuery();
+
+
+                    if (rs.next()) {
+
+                        throw new SQLException(
+                                "Doctor is already booked for this time."
+                        );
+                    }
+                }
+
+
+                // ================= BOOK APPOINTMENT =================
+
+                try (PreparedStatement ps =
+                             con.prepareStatement(insertAppointment)) {
+
+                    ps.setInt(1, patientId);
+                    ps.setInt(2, doctorId);
+                    ps.setString(3, date);
+                    ps.setString(4, time);
+
+
+                    int rows = ps.executeUpdate();
+
+
+                    if (rows == 0) {
+
+                        throw new SQLException(
+                                "Appointment booking failed."
+                        );
+                    }
+                }
+
+
+                // ================= COMMIT =================
+
+                con.commit();
+
+
+                System.out.println();
+                System.out.println(
+                        "================================"
+                );
+
+                System.out.println(
+                        "Appointment booked successfully."
+                );
+
+                System.out.println(
+                        "Patient ID: " + patientId
+                );
+
+                System.out.println(
+                        "Doctor ID: " + doctorId
+                );
+
+                System.out.println(
+                        "Date: " + date
+                );
+
+                System.out.println(
+                        "Time: " + time
+                );
+
+                System.out.println(
+                        "================================"
+                );
+
+
+            } catch (Exception e) {
+
+                // ================= ROLLBACK =================
+
+                con.rollback();
+
+
+                System.out.println();
+                System.out.println(
+                        "Appointment booking failed."
+                );
+
+                System.out.println(
+                        "Transaction rolled back."
+                );
+
+                System.out.println(
+                        "Reason: " + e.getMessage()
+                );
+            }
+
+
+        } catch (SQLException e) {
+
+            System.out.println(
+                    "Database error: " + e.getMessage()
+            );
+        }
+    }
+
+
+    // ================= ADD PRESCRIPTION =================
+
+    public static void addPrescription() {
+
+        System.out.print("Enter appointment ID: ");
+        int appointmentId = sc.nextInt();
+
+        sc.nextLine();
+
+        System.out.print("Enter medicine name: ");
+        String medicine = sc.nextLine();
+
+        System.out.print("Enter dosage: ");
+        String dosage = sc.nextLine();
+
+        System.out.print("Enter duration: ");
+        String duration = sc.nextLine();
+
+        System.out.print("Enter instructions: ");
+        String instructions = sc.nextLine();
+
+
+        String checkAppointment =
+                "SELECT appointment_id " +
+                "FROM appointments " +
+                "WHERE appointment_id = ?";
+
+
+        String insertPrescription =
+                "INSERT INTO prescriptions" +
+                "(appointment_id, medicine_name, " +
+                "dosage, duration, instructions) " +
+                "VALUES (?, ?, ?, ?, ?)";
+
+
+        try (Connection con =
+                     DriverManager.getConnection(URL, USER, PASSWORD)) {
+
+
+            con.setAutoCommit(false);
+
+
+            try {
+
+
+                // ================= CHECK APPOINTMENT =================
+
+                try (PreparedStatement ps =
+                             con.prepareStatement(checkAppointment)) {
+
+                    ps.setInt(1, appointmentId);
+
+                    ResultSet rs = ps.executeQuery();
+
+
+                    if (!rs.next()) {
+
+                        throw new SQLException(
+                                "Appointment not found."
+                        );
+                    }
+                }
+
+
+                // ================= INSERT PRESCRIPTION =================
+
+                try (PreparedStatement ps =
+                             con.prepareStatement(insertPrescription)) {
+
+                    ps.setInt(1, appointmentId);
+                    ps.setString(2, medicine);
+                    ps.setString(3, dosage);
+                    ps.setString(4, duration);
+                    ps.setString(5, instructions);
+
+
+                    int rows = ps.executeUpdate();
+
+
+                    if (rows == 0) {
+
+                        throw new SQLException(
+                                "Prescription insertion failed."
+                        );
+                    }
+                }
+
+
+                con.commit();
+
+
+                System.out.println(
+                        "Prescription added successfully."
+                );
+
+
+            } catch (Exception e) {
+
+                con.rollback();
+
+
+                System.out.println(
+                        "Prescription operation failed."
+                );
+
+                System.out.println(
+                        "Transaction rolled back."
+                );
+
+                System.out.println(
+                        "Reason: " + e.getMessage()
+                );
+            }
+
+
+        } catch (SQLException e) {
+
+            System.out.println(
+                    "Database error: " + e.getMessage()
+            );
+        }
+    }
+
+
+    // ================= VIEW APPOINTMENTS =================
+
+    public static void viewAppointments() {
+
+
+        String sql =
+                "SELECT " +
+                "a.appointment_id, " +
+                "p.patient_name, " +
+                "d.doctor_name, " +
+                "d.specialization, " +
+                "a.appointment_date, " +
+                "a.appointment_time, " +
+                "a.status " +
+
+                "FROM appointments a " +
+
+                "JOIN patients p " +
+                "ON a.patient_id = p.patient_id " +
+
+                "JOIN doctors d " +
+                "ON a.doctor_id = d.doctor_id " +
+
+                "ORDER BY a.appointment_date, " +
+                "a.appointment_time";
+
+
+        try (Connection con =
+                     DriverManager.getConnection(URL, USER, PASSWORD);
+
+             PreparedStatement ps =
+                     con.prepareStatement(sql);
+
+             ResultSet rs =
+                     ps.executeQuery()) {
+
+
+            boolean found = false;
+
+
+            System.out.println();
+            System.out.println(
+                    "=============================================================="
+            );
+
+            System.out.println(
+                    "                    APPOINTMENTS"
+            );
+
+            System.out.println(
+                    "=============================================================="
+            );
+
+
+            while (rs.next()) {
+
+                found = true;
+
+
+                System.out.println(
+                        "Appointment ID : "
+                                + rs.getInt("appointment_id")
+                );
+
+                System.out.println(
+                        "Patient        : "
+                                + rs.getString("patient_name")
+                );
+
+                System.out.println(
+                        "Doctor         : "
+                                + rs.getString("doctor_name")
+                );
+
+                System.out.println(
+                        "Specialization : "
+                                + rs.getString("specialization")
+                );
+
+                System.out.println(
+                        "Date           : "
+                                + rs.getDate("appointment_date")
+                );
+
+                System.out.println(
+                        "Time           : "
+                                + rs.getTime("appointment_time")
+                );
+
+                System.out.println(
+                        "Status         : "
+                                + rs.getString("status")
+                );
+
+                System.out.println(
+                        "--------------------------------------------------------------"
+                );
+            }
+
+
+            if (!found) {
+
+                System.out.println(
+                        "No appointments found."
+                );
+            }
+
+
+        } catch (SQLException e) {
+
+            System.out.println(
+                    "Error: " + e.getMessage()
+            );
+        }
+    }
+
+
+    // ================= PATIENT MEDICAL HISTORY =================
+
+    public static void patientMedicalHistory() {
+
+
+        System.out.print("Enter patient ID: ");
+        int patientId = sc.nextInt();
+
+
+        String sql =
+                "SELECT " +
+
+                "p.patient_name, " +
+
+                "d.doctor_name, " +
+
+                "d.specialization, " +
+
+                "a.appointment_date, " +
+
+                "a.appointment_time, " +
+
+                "pr.medicine_name, " +
+
+                "pr.dosage, " +
+
+                "pr.duration, " +
+
+                "pr.instructions " +
+
+                "FROM patients p " +
+
+                "JOIN appointments a " +
+                "ON p.patient_id = a.patient_id " +
+
+                "JOIN doctors d " +
+                "ON a.doctor_id = d.doctor_id " +
+
+                "LEFT JOIN prescriptions pr " +
+                "ON a.appointment_id = pr.appointment_id " +
+
+                "WHERE p.patient_id = ? " +
+
+                "ORDER BY a.appointment_date DESC";
+
+
+        try (Connection con =
+                     DriverManager.getConnection(URL, USER, PASSWORD);
+
+             PreparedStatement ps =
+                     con.prepareStatement(sql)) {
+
+
+            ps.setInt(1, patientId);
+
+
+            ResultSet rs =
+                    ps.executeQuery();
+
+
+            boolean found = false;
+
+
+            System.out.println();
+            System.out.println(
+                    "======================================================"
+            );
+
+            System.out.println(
+                    "                PATIENT MEDICAL HISTORY"
+            );
+
+            System.out.println(
+                    "======================================================"
+            );
+
+
+            while (rs.next()) {
+
+                found = true;
+
+
+                System.out.println(
+                        "Patient        : "
+                                + rs.getString("patient_name")
+                );
+
+                System.out.println(
+                        "Doctor         : "
+                                + rs.getString("doctor_name")
+                );
+
+                System.out.println(
+                        "Specialization : "
+                                + rs.getString("specialization")
+                );
+
+                System.out.println(
+                        "Appointment    : "
+                                + rs.getDate("appointment_date")
+                );
+
+                System.out.println(
+                        "Time           : "
+                                + rs.getTime("appointment_time")
+                );
+
+                System.out.println(
+                        "Medicine       : "
+                                + rs.getString("medicine_name")
+                );
+
+                System.out.println(
+                        "Dosage         : "
+                                + rs.getString("dosage")
+                );
+
+                System.out.println(
+                        "Duration       : "
+                                + rs.getString("duration")
+                );
+
+                System.out.println(
+                        "Instructions   : "
+                                + rs.getString("instructions")
+                );
+
+
+                System.out.println(
+                        "------------------------------------------------------"
+                );
+            }
+
+
+            if (!found) {
+
+                System.out.println(
+                        "No medical history found."
+                );
+            }
+
+
+        } catch (SQLException e) {
+
+            System.out.println(
+                    "Error: " + e.getMessage()
+            );
+        }
+    }
+
+
+    // ================= VIEW PATIENTS =================
+
+    public static void viewPatients() {
+
+
+        String sql =
+                "SELECT * FROM patients";
+
+
+        try (Connection con =
+                     DriverManager.getConnection(URL, USER, PASSWORD);
+
+             PreparedStatement ps =
+                     con.prepareStatement(sql);
+
+             ResultSet rs =
+                     ps.executeQuery()) {
+
+
+            boolean found = false;
+
+
+            System.out.println();
+            System.out.println(
+                    "=============================================="
+            );
+
+            System.out.println(
+                    "                 PATIENTS"
+            );
+
+            System.out.println(
+                    "=============================================="
+            );
+
+
+            while (rs.next()) {
+
+                found = true;
+
+
+                System.out.println(
+                        "Patient ID : "
+                                + rs.getInt("patient_id")
+                );
+
+                System.out.println(
+                        "Name       : "
+                                + rs.getString("patient_name")
+                );
+
+                System.out.println(
+                        "Age        : "
+                                + rs.getInt("age")
+                );
+
+                System.out.println(
+                        "Gender     : "
+                                + rs.getString("gender")
+                );
+
+                System.out.println(
+                        "Phone      : "
+                                + rs.getString("phone")
+                );
+
+                System.out.println(
+                        "City       : "
+                                + rs.getString("city")
+                );
+
+                System.out.println(
+                        "----------------------------------------------"
+                );
+            }
+
+
+            if (!found) {
+
+                System.out.println(
+                        "No patients found."
+                );
+            }
+
+
+        } catch (SQLException e) {
+
+            System.out.println(
+                    "Error: " + e.getMessage()
+            );
+        }
+    }
+
+
+    // ================= VIEW DOCTORS =================
+
+    public static void viewDoctors() {
+
+
+        String sql =
+                "SELECT * FROM doctors";
+
+
+        try (Connection con =
+                     DriverManager.getConnection(URL, USER, PASSWORD);
+
+             PreparedStatement ps =
+                     con.prepareStatement(sql);
+
+             ResultSet rs =
+                     ps.executeQuery()) {
+
+
+            boolean found = false;
+
+
+            System.out.println();
+            System.out.println(
+                    "=============================================="
+            );
+
+            System.out.println(
+                    "                 DOCTORS"
+            );
+
+            System.out.println(
+                    "=============================================="
+            );
+
+
+            while (rs.next()) {
+
+                found = true;
+
+
+                System.out.println(
+                        "Doctor ID      : "
+                                + rs.getInt("doctor_id")
+                );
+
+                System.out.println(
+                        "Name           : "
+                                + rs.getString("doctor_name")
+                );
+
+                System.out.println(
+                        "Specialization : "
+                                + rs.getString("specialization")
+                );
+
+                System.out.println(
+                        "Phone          : "
+                                + rs.getString("phone")
+                );
+
+                System.out.println(
+                        "Experience     : "
+                                + rs.getInt("experience")
+                                + " years"
+                );
+
+                System.out.println(
+                        "----------------------------------------------"
+                );
+            }
+
+
+            if (!found) {
+
+                System.out.println(
+                        "No doctors found."
+                );
+            }
+
+
+        } catch (SQLException e) {
+
+            System.out.println(
+                    "Error: " + e.getMessage()
+            );
+        }
+    }
+
+
+    // ================= UPDATE PATIENT =================
+
+    public static void updatePatient() {
+
+
+        System.out.print("Enter patient ID: ");
+        int patientId = sc.nextInt();
+
+        sc.nextLine();
+
+
+        System.out.print("Enter new phone number: ");
+        String phone = sc.nextLine();
+
+
+        System.out.print("Enter new city: ");
+        String city = sc.nextLine();
+
+
+        String sql =
+                "UPDATE patients " +
+                "SET phone = ?, city = ? " +
+                "WHERE patient_id = ?";
+
+
+        try (Connection con =
+                     DriverManager.getConnection(URL, USER, PASSWORD);
+
+             PreparedStatement ps =
+                     con.prepareStatement(sql)) {
+
+
+            ps.setString(1, phone);
+            ps.setString(2, city);
+            ps.setInt(3, patientId);
+
+
+            int rows =
+                    ps.executeUpdate();
+
+
+            if (rows > 0) {
+
+                System.out.println(
+                        "Patient updated successfully."
+                );
+
+            } else {
+
+                System.out.println(
+                        "Patient not found."
+                );
+            }
+
+
+        } catch (SQLException e) {
+
+            System.out.println(
+                    "Error: " + e.getMessage()
+            );
+        }
+    }
+
+
+    // ================= DELETE PATIENT =================
+
+    public static void deletePatient() {
+
+
+        System.out.print("Enter patient ID: ");
+        int patientId = sc.nextInt();
+
+
+        String sql =
+                "DELETE FROM patients " +
+                "WHERE patient_id = ?";
+
+
+        try (Connection con =
+                     DriverManager.getConnection(URL, USER, PASSWORD);
+
+             PreparedStatement ps =
+                     con.prepareStatement(sql)) {
+
+
+            ps.setInt(1, patientId);
+
+
+            int rows =
+                    ps.executeUpdate();
+
+
+            if (rows > 0) {
+
+                System.out.println(
+                        "Patient deleted successfully."
+                );
+
+            } else {
+
+                System.out.println(
+                        "Patient not found."
+                );
+            }
+
+
+        } catch (SQLException e) {
+
+            System.out.println(
+                    "Patient cannot be deleted."
+            );
+
+            System.out.println(
+                    "Reason: " + e.getMessage()
+            );
+        }
+    }
+}
